@@ -1,0 +1,42 @@
+package utils
+
+import (
+	"net/url"
+	"strings"
+
+	"github.com/rs/zerolog/log"
+)
+
+// Checks if a string is numeric.
+func IsNumericString(s string) bool {
+	if s == "" {
+		return true
+	}
+
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// IsDomainAllowed checks if a domain is in the allowlist. Note that we do not allow subdomains
+func IsDomainAllowed(allowList []string, rawLink string) bool {
+	u, err := url.Parse(rawLink)
+	if err != nil {
+		log.Error().
+			Str("raw_link", rawLink).
+			Msg("Invalid link")
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+
+	for _, allowed := range allowList {
+		allowed = strings.ToLower(strings.TrimSpace(allowed))
+		if host == allowed {
+			return true
+		}
+	}
+	return false
+}

@@ -1,0 +1,170 @@
+package service
+
+import (
+	"os"
+	"testing"
+
+	"durable-links-generator/api/models"
+
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMain(m *testing.M) {
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	_ = log
+	os.Exit(m.Run())
+}
+
+func TestParseLongDurableLink(t *testing.T) {
+	tests := []struct {
+		name     string
+		longLink string
+		want     models.CreateDurableLinkRequest
+		wantErr  bool
+	}{
+		{
+			name: "complete link with all parameters",
+			longLink: "https://example.com?link=https://target.com" +
+				"&apn=com.android.app" +
+				"&afl=https://android-fallback.com" +
+				"&amv=123" +
+				"&isi=123456789" +
+				"&ifl=https://ios-fallback.com" +
+				"&ipfl=https://ipad-fallback.com" +
+				"&ofl=https://other-platform-fallback.com" +
+				"&utm_source=source" +
+				"&utm_medium=medium" +
+				"&utm_campaign=campaign" +
+				"&utm_term=term" +
+				"&utm_content=content" +
+				"&at=at" +
+				"&ct=ct" +
+				"&mt=mt" +
+				"&pt=pt" +
+				"&st=social title" +
+				"&sd=social description" +
+				"&si=https://social-image.com" +
+				"&path=SHORT",
+			want: models.CreateDurableLinkRequest{
+				DurableLinkInfo: models.DurableLinkInfo{
+					Host: "example.com",
+					Link: "https://target.com",
+					AndroidParameters: models.AndroidParameters{
+						AndroidPackageName:           "com.android.app",
+						AndroidFallbackLink:          "https://android-fallback.com",
+						AndroidMinPackageVersionCode: "123",
+					},
+					IosParameters: models.IosParameters{
+						IosAppStoreId:       "123456789",
+						IosFallbackLink:     "https://ios-fallback.com",
+						IosIpadFallbackLink: "https://ipad-fallback.com",
+					},
+					OtherPlatformParameters: models.OtherPlatformParameters{
+						FallbackURL: "https://other-platform-fallback.com",
+					},
+					AnalyticsInfo: models.AnalyticsInfo{
+						MarketingParameters: models.MarketingParameters{
+							UtmSource:   "source",
+							UtmMedium:   "medium",
+							UtmCampaign: "campaign",
+							UtmTerm:     "term",
+							UtmContent:  "content",
+						},
+						ItunesConnectAnalytics: models.ItunesConnectAnalytics{
+							At: "at",
+							Ct: "ct",
+							Mt: "mt",
+							Pt: "pt",
+						},
+					},
+					SocialMetaTagInfo: models.SocialMetaTagInfo{
+						SocialTitle:       "social title",
+						SocialDescription: "social description",
+						SocialImageLink:   "https://social-image.com",
+					},
+				},
+				Suffix: models.Suffix{
+					Option: "SHORT",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid URL format",
+			longLink: "not a valid url",
+			want:     models.CreateDurableLinkRequest{},
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := &linkService{}
+			got, err := service.ParseLongDurableLink(tt.longLink)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestRemovePreviewFromHost(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "prefix preview",
+			input:    "preview.acme.short.link",
+			expected: "acme.short.link",
+		},
+		{
+			name:     "hyphenated preview",
+			input:    "acme-preview.short.link",
+			expected: "acme.short.link",
+		},
+		{
+			name:     "no preview",
+			input:    "acme.short.link",
+			expected: "acme.short.link",
+		},
+		{
+			name:     "prefix preview with nested domain",
+			input:    "preview.staging.acme.short.link",
+			expected: "staging.acme.short.link",
+		},
+		{
+			name:     "hyphenated preview with dot in domain",
+			input:    "myapp-preview.dev.short.link",
+			expected: "myapp.dev.short.link",
+		},
+		{
+			name:     "unrelated prefix",
+			input:    "notpreview.acme.short.link",
+			expected: "notpreview.acme.short.link",
+		},
+		{
+			name:     "unrelated suffix",
+			input:    "acme-somethingelse.short.link",
+			expected: "acme-somethingelse.short.link",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := removePreviewFromHost(tc.input)
+			if got != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
