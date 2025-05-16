@@ -22,6 +22,7 @@ type IosParameters struct {
 	IosAppStoreId       string `json:"iosAppStoreId,omitempty"`
 }
 
+// If the app is opened from a device other than iOS or Android, the user will be redirected to this fallback URL.
 type OtherPlatformParameters struct {
 	FallbackURL string `json:"ofl,omitempty"`
 }
@@ -46,6 +47,7 @@ type ItunesConnectAnalytics struct {
 	Pt string `json:"pt,omitempty"`
 }
 
+// SocialMetaTagInfo controls the content users will see when they don't have the app installed and land on the preview page.
 type SocialMetaTagInfo struct {
 	SocialTitle       string `json:"socialTitle,omitempty"`
 	SocialDescription string `json:"socialDescription,omitempty"`

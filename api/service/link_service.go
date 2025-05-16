@@ -62,7 +62,7 @@ func (s *linkService) getLongLinkFromHostAndPath(
 }
 
 func (s *linkService) CreateDurableLink(ctx context.Context, params models.CreateDurableLinkRequest) (*models.ShortLinkResponse, error) {
-	warnings := []models.Warning{}
+	warnings := []models.DurableLinkCreationWarning{}
 
 	log.Debug().
 		Str("params", fmt.Sprintf("%+v", params)).
@@ -119,7 +119,7 @@ func (s *linkService) CreateDurableLink(ctx context.Context, params models.Creat
 
 	if si != "" {
 		if !utils.IsURL(si) {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "MALFORMED_PARAM",
 				WarningMessage: "Param 'si' is not a valid URL",
 			})
@@ -136,25 +136,25 @@ func (s *linkService) CreateDurableLink(ctx context.Context, params models.Creat
 
 	if isi == "" {
 		if at := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.At; at != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'at' is not needed, since 'isi' is not specified.",
 			})
 		}
 		if ct := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.Ct; ct != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'ct' is not needed, since 'isi' is not specified.",
 			})
 		}
 		if mt := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.Mt; mt != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'mt' is not needed, since 'isi' is not specified.",
 			})
 		}
-		if pt := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.Pt; pt != "" {
-			warnings = append(warnings, models.Warning{
+		if pt != "" {
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'pt' is not needed, since 'isi' is not specified.",
 			})
@@ -163,19 +163,19 @@ func (s *linkService) CreateDurableLink(ctx context.Context, params models.Creat
 
 	if pt == "" {
 		if at := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.At; at != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'at' is not needed, since 'pt' is not specified.",
 			})
 		}
 		if ct := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.Ct; ct != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'ct' is not needed, since 'pt' is not specified.",
 			})
 		}
 		if mt := params.DurableLinkInfo.AnalyticsInfo.ItunesConnectAnalytics.Mt; mt != "" {
-			warnings = append(warnings, models.Warning{
+			warnings = append(warnings, models.DurableLinkCreationWarning{
 				WarningCode:    "UNRECOGNIZED_PARAM",
 				WarningMessage: "Param 'mt' is not needed, since 'pt' is not specified.",
 			})
@@ -317,7 +317,7 @@ func (s *linkService) createOrGetShortLink(
 				Str("path", path).
 				Str("query_params", rawQS).
 				Msg("Re‑using existing short link")
-			return &models.ShortLinkResponse{ShortLink: full, Warnings: []models.Warning{}}, nil
+			return &models.ShortLinkResponse{ShortLink: full, Warnings: []models.DurableLinkCreationWarning{}}, nil
 
 		} else if err != sql.ErrNoRows {
 			log.Error().
@@ -343,7 +343,7 @@ func (s *linkService) createOrGetShortLink(
 		Str("query_params", rawQS).
 		Msg("New link stored in database")
 
-	return &models.ShortLinkResponse{ShortLink: full, Warnings: []models.Warning{}}, nil
+	return &models.ShortLinkResponse{ShortLink: full, Warnings: []models.DurableLinkCreationWarning{}}, nil
 }
 
 func (s *linkService) findExistingShortLink(
