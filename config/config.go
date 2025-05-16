@@ -52,3 +52,10 @@ func getEnvAsDuration(name string, defaultVal time.Duration) time.Duration {
 	}
 	return defaultVal
 }
+
+func getEnvAsOptionalString(key string) *string {
+	if value, exists := os.LookupEnv(key); exists {
+		return &value
+	}
+	return nil
+}
